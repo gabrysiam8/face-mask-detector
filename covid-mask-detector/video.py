@@ -42,7 +42,7 @@ def detect(model_path, video_path):
 
     # vPafy = pafy.new(video_path)
     # play = vPafy.getbest(preftype="mp4")
-    vc = cv2.VideoCapture('../test2.mp4')
+    vc = cv2.VideoCapture(video_path)
 
     while True:
         (rVal, frame) = vc.read()

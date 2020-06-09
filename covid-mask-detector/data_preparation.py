@@ -1,38 +1,32 @@
-""" Add images into a pandas Dataframe
-"""
 from pathlib import Path
-
 import pandas as pd
-from google_drive_downloader import GoogleDriveDownloader as gdd
 from tqdm import tqdm
+import cv2
+
 
 # download dataset from link provided by
 # https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset
-datasetPath = Path('covid-mask-detector/data/mask.zip')
-gdd.download_file_from_google_drive(file_id='1UlOk6EtiaXTHylRUx2mySgvJX9ycoeBp',
-                                    dest_path=str(datasetPath),
-                                    unzip=True)
-# delete zip file
-datasetPath.unlink()
+from data_download import DataDownloader
 
-datasetPath = Path('covid-mask-detector/data/self-built-masked-face-recognition-dataset')
-maskPath = datasetPath/'AFDB_masked_face_dataset'
-nonMaskPath = datasetPath/'AFDB_face_dataset'
+downloader = DataDownloader(path_to_save='covid-mask-detector/data/mask.zip', file_id='1UlOk6EtiaXTHylRUx2mySgvJX9ycoeBp')
+downloader.download()
+
 maskDF = pd.DataFrame()
 
-for subject in tqdm(list(maskPath.iterdir()), desc='mask photos'):
-    for imgPath in subject.iterdir():
-        maskDF = maskDF.append({
-            'image': str(imgPath),
-            'mask': 1
-        }, ignore_index=True)
 
-for subject in tqdm(list(nonMaskPath.iterdir()), desc='non mask photos'):
-    for imgPath in subject.iterdir():
-        maskDF = maskDF.append({
-            'image': str(imgPath),
-            'mask': 0
-        }, ignore_index=True)
+def add_photos_to_category(desc, mask_id, maskPath):
+    NoneType = type(None)
+    global subject, imgPath, maskDF
+    for subject in tqdm(list(maskPath.iterdir()), desc=desc):
+        for imgPath in subject.iterdir():
+            img = cv2.imread(str(imgPath))
+            if type(img) != NoneType:
+                maskDF = maskDF.append({'image': str(imgPath), 'mask': mask_id}, ignore_index=True)
+
+
+datasetPath = Path('covid-mask-detector/data/self-built-masked-face-recognition-dataset')
+add_photos_to_category('mask photos', 1, datasetPath/'AFDB_masked_face_dataset')
+add_photos_to_category('non mask photos', 0, datasetPath/'AFDB_face_dataset')
 
 dfName = 'covid-mask-detector/data/mask_df.pickle'
 print(f'saving Dataframe to: {dfName}')

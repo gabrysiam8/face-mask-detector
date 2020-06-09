@@ -63,7 +63,7 @@ class MaskDetector(pl.LightningModule):
                 if isinstance(layer, (Linear, Conv2d)):
                     init.xavier_uniform_(layer.weight)
     
-    def forward(self, x: Tensor): # pylint: disable=arguments-differ
+    def forward(self, x: Tensor):
         """ forward pass
         """
         out = self.convLayer1(x)
@@ -96,7 +96,7 @@ class MaskDetector(pl.LightningModule):
     def configure_optimizers(self) -> Optimizer:
         return Adam(self.parameters(), lr=self.learningRate)
     
-    def training_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]: # pylint: disable=arguments-differ
+    def training_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]:
         inputs, labels = batch['image'], batch['mask']
         labels = labels.flatten()
         outputs = self.forward(inputs)
@@ -105,7 +105,7 @@ class MaskDetector(pl.LightningModule):
         tensorboardLogs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboardLogs}
     
-    def validation_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]: # pylint: disable=arguments-differ
+    def validation_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]:
         inputs, labels = batch['image'], batch['mask']
         labels = labels.flatten()
         outputs = self.forward(inputs)
@@ -135,7 +135,6 @@ if __name__ == '__main__':
         mode='max'
     )
     trainer = Trainer(gpus=1 if torch.cuda.is_available() else 0,
-                      max_epochs=10,
-                      checkpoint_callback=checkpoint_callback,
-                      profiler=True)
+                      max_epochs=1,
+                      checkpoint_callback=checkpoint_callback)
     trainer.fit(model)

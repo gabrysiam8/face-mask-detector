@@ -1,5 +1,3 @@
-""" Dataset module
-"""
 import cv2
 from torch import long, tensor
 from torch.utils.data.dataset import Dataset
@@ -7,10 +5,6 @@ from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
 
 
 class MaskDataset(Dataset):
-    """ Masked faces dataset
-        0 = 'no mask'
-        1 = 'mask'
-    """
     def __init__(self, dataFrame):
         self.dataFrame = dataFrame
         
@@ -25,10 +19,18 @@ class MaskDataset(Dataset):
             raise NotImplementedError('slicing is not supported')
         
         row = self.dataFrame.iloc[key]
-        return {
-            'image': self.transformations(cv2.imread(row['image'])),
-            'mask': tensor([row['mask']], dtype=long), # pylint: disable=not-callable
-        }
+        image_ = row['image']
+        imread = cv2.imread(image_)
+        NoneType = type(None)
+        if type(imread) == NoneType:
+            print(image_)
+            # import os
+            # os.remove(image_)
+        else:
+            return {
+                'image': self.transformations(imread),
+                'mask': tensor([row['mask']], dtype=long)
+            }
     
     def __len__(self):
         return len(self.dataFrame.index)

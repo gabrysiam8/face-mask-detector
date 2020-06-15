@@ -7,7 +7,7 @@ from data_download import DataDownloader
 
 class DataPreparator:
     def __init__(self):
-        self.dataframe = pd.DataFrame()
+        self.dataframe = pd.DataFrame(columns=['image', 'mask'])
 
     @staticmethod
     def download_data(data_path, file_id):
@@ -15,11 +15,13 @@ class DataPreparator:
         downloader.download()
 
     def add_images_to_category(self, category, mask_flag, data_path):
-        for subject in tqdm(list(data_path.iterdir()), unit='files', desc=category):
-            for img_path in subject.iterdir():
-                img = cv2.imread(str(img_path))
-                if img is not None:
-                    self.dataframe = self.dataframe.append({'image': str(img_path), 'mask': mask_flag}, ignore_index=True)
+        img_paths = []
+        for img_path in tqdm(list(data_path.glob("*/*")), unit='files', desc=category):
+            img = cv2.imread(str(img_path))
+            if img is not None:
+                img_paths.append(str(img_path))
+        temp_dataframe = pd.DataFrame({'image': img_paths, 'mask': [mask_flag]*len(img_paths)})
+        self.dataframe = self.dataframe.append(temp_dataframe, ignore_index=True)
 
     def save_dataframe(self, dataframe_path):
         print(f'Saving dataframe to file {dataframe_path}...')

@@ -16,6 +16,7 @@ from torch.nn import (Conv2d, CrossEntropyLoss, Linear, MaxPool2d, ReLU, Sequent
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
+from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
 
 from dataset import MaskDataset
 
@@ -75,10 +76,15 @@ class MaskDetector(pl.LightningModule):
     
     def prepare_data(self) -> None:
         self.maskDF = maskDF = pd.read_pickle(self.maskDFPath)
-        train, validate = train_test_split(maskDF, test_size=0.3, random_state=0,
-                                           stratify=maskDF['mask'])
-        self.trainDF = MaskDataset(train)
-        self.validateDF = MaskDataset(validate)
+        train, validate = train_test_split(maskDF, test_size=0.3, random_state=0, stratify=maskDF['mask'])
+
+        transformations = Compose([
+            ToPILImage(),
+            Resize((100, 100)),
+            ToTensor()
+        ])
+        self.trainDF = MaskDataset(dataframe=train, transform=transformations)
+        self.validateDF = MaskDataset(dataframe=validate, transform=transformations)
         
         # Create weight vector for CrossEntropyLoss
         maskNum = maskDF[maskDF['mask']==1].shape[0]
@@ -123,6 +129,7 @@ class MaskDetector(pl.LightningModule):
         avgAcc = torch.stack([x['val_acc'] for x in outputs]).mean()
         tensorboardLogs = {'val_loss': avgLoss, 'val_acc':avgAcc}
         return {'val_loss': avgLoss, 'log': tensorboardLogs}
+
 
 if __name__ == '__main__':
     model = MaskDetector(Path('covid-mask-detector/data/mask_df.pickle'))

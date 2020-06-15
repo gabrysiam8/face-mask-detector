@@ -1,36 +1,22 @@
 import cv2
 from torch import long, tensor
 from torch.utils.data.dataset import Dataset
-from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
 
 
 class MaskDataset(Dataset):
-    def __init__(self, dataFrame):
-        self.dataFrame = dataFrame
-        
-        self.transformations = Compose([
-            ToPILImage(),
-            Resize((100, 100)),
-            ToTensor(), # [0, 1]
-        ])
+    def __init__(self, dataframe, transform=None):
+        self.dataframe = dataframe
+        self.transform = transform
     
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            raise NotImplementedError('slicing is not supported')
-        
-        row = self.dataFrame.iloc[key]
-        image_ = row['image']
-        imread = cv2.imread(image_)
-        NoneType = type(None)
-        if type(imread) == NoneType:
-            print(image_)
-            # import os
-            # os.remove(image_)
-        else:
+    def __getitem__(self, idx):
+        row = self.dataframe.iloc[idx]
+        img_path = row['image']
+        img = cv2.imread(img_path)
+        if img is not None:
             return {
-                'image': self.transformations(imread),
+                'image': self.transform(img),
                 'mask': tensor([row['mask']], dtype=long)
             }
     
     def __len__(self):
-        return len(self.dataFrame.index)
+        return len(self.dataframe)

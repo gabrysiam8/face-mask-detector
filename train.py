@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from torch import Tensor
-from torch.nn import (Conv2d, CrossEntropyLoss, Linear, MaxPool2d, ReLU, Sequential)
+from torch.nn import (Conv2d, CrossEntropyLoss, Linear, MaxPool2d, ReLU, Sequential, Sigmoid)
 from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
@@ -21,11 +21,11 @@ from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
 from dataset import MaskDataset
 
 
-class MaskDetector(pl.LightningModule):
+class Model(pl.LightningModule):
     """ MaskDetector PyTorch Lightning class
     """
     def __init__(self, maskDFPath: Path=None):
-        super(MaskDetector, self).__init__()
+        super(Model, self).__init__()
         self.maskDFPath = maskDFPath
         
         self.maskDF = None
@@ -54,7 +54,7 @@ class MaskDetector(pl.LightningModule):
         
         self.linearLayers = linearLayers = Sequential(
             Linear(in_features=2048, out_features=1024),
-            ReLU(),
+            Sigmoid(),
             Linear(in_features=1024, out_features=2),
         )
         
@@ -132,7 +132,7 @@ class MaskDetector(pl.LightningModule):
 
 
 if __name__ == '__main__':
-    model = MaskDetector(Path('data/mask_df.pickle'))
+    model = Model(Path('data/mask_df.pickle'))
     
     checkpoint_callback = ModelCheckpoint(
         filepath='checkpoints/weights.ckpt',

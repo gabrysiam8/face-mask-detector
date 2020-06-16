@@ -3,13 +3,13 @@ import cv2
 import torch
 import pafy
 from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
-from train import MaskDetector
+from train import Model
 import face_recognition
 
 
 @torch.no_grad()
 def detect(model_path, video_path):
-    model = MaskDetector()
+    model = Model()
     model.load_state_dict(torch.load(model_path)['state_dict'], strict=False)
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -40,16 +40,11 @@ def detect(model_path, video_path):
         faces = face_recognition.face_locations(min_img)
         for face in faces:
             (top, right, bottom, left) = [v*scale for v in face]
-            
-            # clamp coordinates that are outside of the image
-            # x, y = max(x, 0), max(y, 0)
 
-            # predict mask label
             face_img = frame[top:bottom, left:right]
             output = model(transformations(face_img).unsqueeze(0).to(device))
             _, predicted = torch.max(output.data, 1)
 
-            # draw face frame
             cv2.rectangle(frame, (left, top), (right, bottom), label_color[predicted], 2)
             cv2.putText(frame, labels[predicted], (left, top - 10), font, 0.6, label_color[predicted], 2)
 

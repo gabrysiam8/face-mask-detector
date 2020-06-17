@@ -44,7 +44,7 @@ def detect(model_path, video_path):
 
             face_img = frame[top:bottom, left:right]
             output = model(transformations(face_img).unsqueeze(0).to(device))
-            _, predicted = torch.max(output.data, 1)
+            predicted = torch.argmax(output.data, dim=1)
 
             cv2.rectangle(frame, (left, top), (right, bottom), label_color[predicted], 2)
             cv2.putText(frame, labels[predicted], (left, top - 10), font, 0.6, label_color[predicted], 2)

@@ -137,6 +137,6 @@ if __name__ == '__main__':
         mode='max'
     )
     trainer = Trainer(gpus=1 if torch.cuda.is_available() else 0,
-                      max_epochs=1,
+                      max_epochs=8,
                       checkpoint_callback=checkpoint_callback)
     trainer.fit(model)

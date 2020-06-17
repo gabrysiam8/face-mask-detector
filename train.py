@@ -80,7 +80,6 @@ class Model(pl.LightningModule):
         self.trainDF = MaskDataset(dataframe=train, transform=transformations)
         self.validateDF = MaskDataset(dataframe=validate, transform=transformations)
         
-        # Create weight vector for CrossEntropyLoss
         mask_counter = maskDF[maskDF['mask'] == 1].shape[0]
         nonmask_counter = maskDF[maskDF['mask'] == 0].shape[0]
         counter_list = [nonmask_counter, mask_counter]
@@ -101,8 +100,7 @@ class Model(pl.LightningModule):
         labels = labels.flatten()
         outputs = self.forward(inputs)
         loss = self.crossEntropyLoss(outputs, labels)
-        tensorboard_logs = {'train_loss': loss}
-        return {'loss': loss, 'log': tensorboard_logs}
+        return {'loss': loss}
     
     def validation_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]:
         inputs, labels = batch['image'], batch['mask']
@@ -118,9 +116,7 @@ class Model(pl.LightningModule):
     def validation_epoch_end(self, outputs: List[Dict[str, Tensor]]) \
             -> Dict[str, Union[Tensor, Dict[str, Tensor]]]:
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        avg_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss, 'val_acc': avg_acc}
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+        return {'val_loss': avg_loss}
 
 
 if __name__ == '__main__':

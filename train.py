@@ -100,7 +100,10 @@ class Model(pl.LightningModule):
         labels = labels.flatten()
         outputs = self.forward(inputs)
         loss = self.cross_entropy_loss(outputs, labels)
-        return {'loss': loss}
+        return {
+            'loss': loss,
+            'log': {'train_loss': loss}
+        }
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch['image'], batch['mask']
@@ -116,7 +119,11 @@ class Model(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         mean_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        return {'val_loss': mean_loss}
+        mean_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
+        return {
+            'val_loss': mean_loss,
+            'log': {'val_loss': mean_loss, 'val_acc': mean_acc}
+        }
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import cv2
 from data_download import DataDownloader
 
 
-class DataPreparator:
+class DataCreator:
     def __init__(self):
         self.dataframe = pd.DataFrame(columns=['image', 'mask'])
 
@@ -29,7 +29,7 @@ class DataPreparator:
 
 
 if __name__ == '__main__':
-    data_preparator = DataPreparator()
+    data_preparator = DataCreator()
 
     # download dataset from link provided by
     # https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset

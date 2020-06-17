@@ -14,7 +14,7 @@ from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
-from dataset import MaskDataset
+from mask_dataset import MaskDataset
 
 
 def init_weights(layer):

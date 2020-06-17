@@ -3,12 +3,12 @@ import cv2
 import torch
 import pafy
 from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
-from train import Model
+from model_factory import Model
 import face_recognition
 
 
 @torch.no_grad()
-def detect(model_path, video_path):
+def run_detector(model_path, video_path):
     model = Model()
     state_dict = torch.load(model_path)['state_dict']
     model.load_state_dict(state_dict, strict=False)
@@ -60,4 +60,4 @@ def detect(model_path, video_path):
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         raise ValueError('Wrong number of arguments.')
-    detect(sys.argv[1], sys.argv[2])
+    run_detector(sys.argv[1], sys.argv[2])

@@ -79,14 +79,13 @@ class Model(pl.LightningModule):
         ])
         self.trainDF = MaskDataset(dataframe=train, transform=transformations)
         self.validateDF = MaskDataset(dataframe=validate, transform=transformations)
-        
-        # Create weight vector for CrossEntropyLoss
+
         mask_counter = dataframe[dataframe['mask'] == 1].shape[0]
         nonmask_counter = dataframe[dataframe['mask'] == 0].shape[0]
         counter_list = [mask_counter, nonmask_counter]
         weights = [(counter / sum(counter_list)) for counter in counter_list]
         self.cross_entropy_loss = CrossEntropyLoss(weight=torch.tensor(weights))
-    
+
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.trainDF, batch_size=100, num_workers=8)
     
@@ -101,11 +100,8 @@ class Model(pl.LightningModule):
         labels = labels.flatten()
         outputs = self.forward(inputs)
         loss = self.cross_entropy_loss(outputs, labels)
-        return {
-            'loss': loss,
-            'log': {'train_loss': loss}
-        }
-    
+        return {'loss': loss}
+
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch['image'], batch['mask']
         labels = labels.flatten()
@@ -117,14 +113,10 @@ class Model(pl.LightningModule):
             'val_loss': loss,
             'val_acc': torch.tensor(val_acc)
         }
-    
+
     def validation_epoch_end(self, outputs):
         mean_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        mean_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
-        return {
-            'val_loss': mean_loss,
-            'log': {'val_loss': mean_loss, 'val_acc': mean_acc}
-        }
+        return {'val_loss': mean_loss}
 
 
 if __name__ == '__main__':

@@ -1,8 +1,5 @@
-""" Training module
-"""
 from pathlib import Path
 from typing import Dict, List, Union
-
 import pandas as pd
 import pytorch_lightning as pl
 import torch
@@ -17,13 +14,15 @@ from torch.optim import Adam
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Resize, ToPILImage, ToTensor
-
 from dataset import MaskDataset
 
 
+def init_weights(layer):
+    if isinstance(layer, (Linear, Conv2d)):
+        init.xavier_uniform_(layer.weight)
+
+
 class Model(pl.LightningModule):
-    """ MaskDetector PyTorch Lightning class
-    """
     def __init__(self, maskDFPath: Path=None):
         super(Model, self).__init__()
         self.maskDFPath = maskDFPath
@@ -32,7 +31,7 @@ class Model(pl.LightningModule):
         self.trainDF = None
         self.validateDF = None
         self.crossEntropyLoss = None
-        self.learningRate = 0.00001
+        self.learningRate = 1e-3
         
         self.convLayer1 = convLayer1 = Sequential(
             Conv2d(3, 32, kernel_size=(3, 3), padding=(1, 1)),
@@ -57,16 +56,11 @@ class Model(pl.LightningModule):
             Sigmoid(),
             Linear(in_features=1024, out_features=2),
         )
-        
-        # Initialize layers' weights
+
         for sequential in [convLayer1, convLayer2, convLayer3, linearLayers]:
-            for layer in sequential.children():
-                if isinstance(layer, (Linear, Conv2d)):
-                    init.xavier_uniform_(layer.weight)
+            sequential.apply(init_weights)
     
     def forward(self, x: Tensor):
-        """ forward pass
-        """
         out = self.convLayer1(x)
         out = self.convLayer2(out)
         out = self.convLayer3(out)
@@ -87,17 +81,17 @@ class Model(pl.LightningModule):
         self.validateDF = MaskDataset(dataframe=validate, transform=transformations)
         
         # Create weight vector for CrossEntropyLoss
-        maskNum = maskDF[maskDF['mask']==1].shape[0]
-        nonMaskNum = maskDF[maskDF['mask']==0].shape[0]
-        nSamples = [nonMaskNum, maskNum]
-        normedWeights = [1 - (x / sum(nSamples)) for x in nSamples]
-        self.crossEntropyLoss = CrossEntropyLoss(weight=torch.tensor(normedWeights))
+        mask_counter = maskDF[maskDF['mask'] == 1].shape[0]
+        nonmask_counter = maskDF[maskDF['mask'] == 0].shape[0]
+        counter_list = [nonmask_counter, mask_counter]
+        weights = [1 - (counter / sum(counter_list)) for counter in counter_list]
+        self.crossEntropyLoss = CrossEntropyLoss(weight=torch.tensor(weights))
     
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.trainDF, batch_size=32, shuffle=True, num_workers=4)
+        return DataLoader(self.trainDF, batch_size=100, num_workers=8)
     
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.validateDF, batch_size=32, num_workers=4)
+        return DataLoader(self.validateDF, batch_size=100, num_workers=8)
     
     def configure_optimizers(self) -> Optimizer:
         return Adam(self.parameters(), lr=self.learningRate)
@@ -107,28 +101,26 @@ class Model(pl.LightningModule):
         labels = labels.flatten()
         outputs = self.forward(inputs)
         loss = self.crossEntropyLoss(outputs, labels)
-        
-        tensorboardLogs = {'train_loss': loss}
-        return {'loss': loss, 'log': tensorboardLogs}
+        tensorboard_logs = {'train_loss': loss}
+        return {'loss': loss, 'log': tensorboard_logs}
     
     def validation_step(self, batch: dict, _batch_idx: int) -> Dict[str, Tensor]:
         inputs, labels = batch['image'], batch['mask']
         labels = labels.flatten()
         outputs = self.forward(inputs)
         loss = self.crossEntropyLoss(outputs, labels)
-        
         _, outputs = torch.max(outputs, dim=1)
-        valAcc = accuracy_score(outputs.cpu(), labels.cpu())
-        valAcc = torch.tensor(valAcc)
-        
-        return {'val_loss': loss, 'val_acc':valAcc}
+        val_acc = accuracy_score(outputs.cpu(), labels.cpu())
+        val_acc = torch.tensor(val_acc)
+
+        return {'val_loss': loss, 'val_acc': val_acc}
     
     def validation_epoch_end(self, outputs: List[Dict[str, Tensor]]) \
             -> Dict[str, Union[Tensor, Dict[str, Tensor]]]:
-        avgLoss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        avgAcc = torch.stack([x['val_acc'] for x in outputs]).mean()
-        tensorboardLogs = {'val_loss': avgLoss, 'val_acc':avgAcc}
-        return {'val_loss': avgLoss, 'log': tensorboardLogs}
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        avg_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
+        tensorboard_logs = {'val_loss': avg_loss, 'val_acc': avg_acc}
+        return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
 
 if __name__ == '__main__':

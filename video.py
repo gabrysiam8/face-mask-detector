@@ -10,7 +10,8 @@ import face_recognition
 @torch.no_grad()
 def detect(model_path, video_path):
     model = Model()
-    model.load_state_dict(torch.load(model_path)['state_dict'], strict=False)
+    state_dict = torch.load(model_path)['state_dict']
+    model.load_state_dict(state_dict, strict=False)
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
